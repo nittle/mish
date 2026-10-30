@@ -24,7 +24,9 @@ int main() {
 		char* prompt_start = prompt;
 		char* token = strsep(&prompt, " ");
 		while(token != NULL) {
-			arg[lastArg++] = token;
+			if(*token != '\0')
+				arg[lastArg++] = token;
+
 			token = strsep(&prompt, " ");
 		}
 
