@@ -1,4 +1,4 @@
-#include <stddef.h>
+#include<stddef.h>
 #include<unistd.h>
 #include<stdio.h>
 #include<stdlib.h>
@@ -22,6 +22,7 @@ int main() {
 		char** arg = calloc(BUFFER_SIZE, sizeof(char*));
 		size_t lastArg = 0;
 		char* prompt_start = prompt;
+
 		char* token = strsep(&prompt, " ");
 		while(token != NULL) {
 			if(*token != '\0')
@@ -30,26 +31,33 @@ int main() {
 			token = strsep(&prompt, " ");
 		}
 
-
-		char* exec_path = (char*)calloc(BUFFER_SIZE, sizeof(char));
-		strcat(exec_path, path);
-		strcat(exec_path, "/");
-		strcat(exec_path, arg[0]);
-		arg[0] = exec_path;
-
-		pid_t childpid = fork();
-
-		if(childpid == 0) { // Child process
-			execv(arg[0], arg);
-			fprintf(stderr, "%s\n", ERROR_MESSAGE);
+		// Check for the blank command
+		if (arg[0] == NULL) {
+			// Do nothing
 		}
-		// Continuing in the parent process
+		else {
+			char* exec_path = (char*)calloc(BUFFER_SIZE, sizeof(char));
+			strcat(exec_path, path);
+			strcat(exec_path, "/");
+			strcat(exec_path, arg[0]);
+			arg[0] = exec_path;
+
+			pid_t childpid = fork();
+
+			if(childpid == 0) { // Child process
+				execv(arg[0], arg);
+				fprintf(stderr, "%s\n", ERROR_MESSAGE);
+			}
+			// Continuing in the parent process
+			// Waiting for the child process
+			wait(NULL);
+		}
+
 		free(arg);
 		for(size_t i = 0; i < BUFFER_SIZE; i++)
 			prompt_start[i] = '\0';
 		prompt = prompt_start;
-		// Waiting for the child process
-		wait(NULL);
 	}
+
 	free(prompt);
 }
