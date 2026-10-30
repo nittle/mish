@@ -34,8 +34,10 @@ int main() {
 		// Check for the blank command
 		if (arg[0] == NULL) {
 			// Do nothing
-		}
-		else {
+		} else if(!strcmp(arg[0], "exit")) { // Exit command
+			fprintf(stdout, "%s\n", "Exitting...");
+			exit(1);
+		} else { // Run an executable
 			char* exec_path = (char*)calloc(BUFFER_SIZE, sizeof(char));
 			strcat(exec_path, path);
 			strcat(exec_path, "/");
@@ -47,6 +49,7 @@ int main() {
 			if(childpid == 0) { // Child process
 				execv(arg[0], arg);
 				fprintf(stderr, "%s\n", ERROR_MESSAGE);
+				exit(-1);
 			}
 			// Continuing in the parent process
 			// Waiting for the child process
