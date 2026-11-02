@@ -37,17 +37,45 @@ int main() {
 		} else if(!strcmp(arg[0], "exit")) { // Exit command
 			fprintf(stdout, "%s\n", "Exitting...");
 			exit(1);
+		} else if(!strcmp(arg[0], "path")) {
+			if(lastArg > 1) {
+				for(size_t i = 0; i < BUFFER_SIZE; i++) {
+					path[i] = '\0';
+				}
+				for(size_t i = 1; i < lastArg - 1; i++) {
+					strcat(path, arg[i]);
+					strcat(path, ":");
+				}
+				strcat(path, arg[lastArg - 1]);
+				fprintf(stdout, "New PATH: %s\n", path);
+			} else {
+				fprintf(stdout, "PATH is: %s\n", path);
+			}
 		} else { // Run an executable
-			char* exec_path = (char*)calloc(BUFFER_SIZE, sizeof(char));
-			strcat(exec_path, path);
-			strcat(exec_path, "/");
-			strcat(exec_path, arg[0]);
-			arg[0] = exec_path;
-
 			pid_t childpid = fork();
 
 			if(childpid == 0) { // Child process
-				execv(arg[0], arg);
+				char* temp_path = (char*)malloc(BUFFER_SIZE * sizeof(char));
+				strcpy(temp_path, path);
+
+				char* try_path = calloc(sizeof(char), BUFFER_SIZE);
+				char* token = strsep(&temp_path, ":");
+				while(token != NULL) {
+					strcat(try_path, token);
+					strcat(try_path, "/");
+					strcat(try_path, arg[0]);
+
+					if(!access(try_path, X_OK)) {
+						arg[0] = try_path;
+						execv(arg[0], arg);
+						break;
+					}
+
+					for(size_t i = 0; i < BUFFER_SIZE; i++) {
+						try_path[i] = '\0';
+					}
+					token = strsep(&temp_path, ":");
+				}
 				fprintf(stderr, "%s\n", ERROR_MESSAGE);
 				exit(-1);
 			}
