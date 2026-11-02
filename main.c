@@ -12,11 +12,18 @@ const static char INITIAL_PATH[] = "/bin";
 // Contains the path variable
 char* path;
 
+typedef struct {
+	char** args;
+	size_t argCount;
+} CommandCall;
+
 // Functions declaration
 void tryExecutable(char** arg, size_t argCount);
 void commandPath(char** arg, size_t argCount);
 void commandExit(char** arg, size_t argCount);
 size_t parseArgs(char* prompt, char** arg);
+size_t parsePrompt(char* prompt, CommandCall* commands);
+void handleCommand(CommandCall* command);
 
 int main() {
 	char* prompt = (char*)calloc(BUFFER_SIZE, sizeof(char));
@@ -28,21 +35,23 @@ int main() {
 		// Get prompt from the user and parse args
 		fprintf(stdout, "%s", "wish> ");
 		fgets(prompt, BUFFER_SIZE, stdin);
-		char** arg = calloc(BUFFER_SIZE, sizeof(char*));
-		size_t argCount = parseArgs(prompt, arg);
+		
+		CommandCall commandsCalled[BUFFER_SIZE];
+		size_t commandsCount = parsePrompt(prompt, commandsCalled);
+		
+		fprintf(stdout, "Commands called: %d\n", commandsCount);
 
-		// Check for the blank command
-		if (arg[0] == NULL) {
-			// Do nothing
-		} else if(!strcmp(arg[0], "exit")) { // Exit command
-			commandExit(arg, argCount);
-		} else if(!strcmp(arg[0], "path")) { // Path command
-			commandPath(arg, argCount);
-		} else { // Run an executable
-			tryExecutable(arg, argCount);
+		for(size_t i = 0; i < commandsCount; i++) {
+			handleCommand(&commandsCalled[i]);
 		}
 
-		free(arg);
+		while(wait(NULL) > 0);
+
+		// Free the args memory
+		for(size_t i = 0; i < commandsCount; i++) {
+			free(commandsCalled[i].args);
+		}
+
 		// Clear the prompt variable
 		for(size_t i = 0; i < BUFFER_SIZE; i++)
 			prompt[i] = '\0';
@@ -50,6 +59,38 @@ int main() {
 
 	free(prompt);
 	free(path);
+}
+
+void handleCommand(CommandCall* command) {
+	char** arg = command->args;
+	size_t argCount = command->argCount;
+
+	// Check for the blank command
+	if (arg[0] == NULL) {
+		// Do nothing
+	} else if(!strcmp(arg[0], "exit")) { // Exit command
+		commandExit(arg, argCount);
+	} else if(!strcmp(arg[0], "path")) { // Path command
+		commandPath(arg, argCount);
+	} else { // Run an executable
+		tryExecutable(arg, argCount);
+	}
+}
+
+size_t parsePrompt(char* prompt, CommandCall* commands) {
+	size_t lastCommand = 0;
+	char* token = strsep(&prompt, "&");
+	while(token != NULL) {
+		char** args = calloc(sizeof(char), BUFFER_SIZE);
+		size_t argCount = parseArgs(token, args);
+		commands[lastCommand].argCount = argCount;
+		commands[lastCommand].args = args;
+		lastCommand++;
+		
+		token = strsep(&prompt, "&");
+	}
+
+	return lastCommand;
 }
 
 size_t parseArgs(char* prompt, char** arg) {
@@ -116,7 +157,4 @@ void tryExecutable(char** arg, size_t argCount) {
 		fprintf(stderr, "%s\n", ERROR_MESSAGE);
 		exit(-1);
 	}
-	// Continuing in the parent process
-	// Waiting for the child process
-	wait(NULL);
 }
