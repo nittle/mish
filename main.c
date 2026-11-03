@@ -5,9 +5,9 @@
 #include<string.h>
 #include<sys/wait.h>
 
-const static size_t BUFFER_SIZE = 256;
-const static char ERROR_MESSAGE[] = "An error occurred";
-const static char INITIAL_PATH[] = "/bin";
+#define BUFFER_SIZE 256
+#define ERROR_MESSAGE "An error occurred"
+#define INITIAL_PATH "/bin"
 
 // Contains the path variable
 char* path;
