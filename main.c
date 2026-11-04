@@ -41,8 +41,6 @@ int main() {
 		CommandCall commandsCalled[BUFFER_SIZE];
 		size_t commandsCount = parsePrompt(prompt, commandsCalled);
 		
-		fprintf(stdout, "Commands called: %d\n", commandsCount);
-
 		for(size_t i = 0; i < commandsCount; i++) {
 			handleCommand(&commandsCalled[i]);
 		}
@@ -97,7 +95,6 @@ size_t parsePrompt(char* prompt, CommandCall* commands) {
 	while(token != NULL) {
 		char** args = calloc(sizeof(char), BUFFER_SIZE);
 		char* output = calloc(sizeof(char), BUFFER_SIZE);
-		printf("Token given to parseArgs is %s", token);
 		size_t argCount = parseArgs(token, args, output);
 		commands[lastCommand].argCount = argCount;
 		commands[lastCommand].args = args;
