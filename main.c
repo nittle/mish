@@ -4,6 +4,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<sys/wait.h>
+#include<ctype.h>
 
 #define BUFFER_SIZE 256
 #define ERROR_MESSAGE "An error occurred"
@@ -15,13 +16,14 @@ char* path;
 typedef struct {
 	char** args;
 	size_t argCount;
+	char* output;
 } CommandCall;
 
 // Functions declaration
 void tryExecutable(char** arg, size_t argCount);
 void commandPath(char** arg, size_t argCount);
 void commandExit(char** arg, size_t argCount);
-size_t parseArgs(char* prompt, char** arg);
+size_t parseArgs(char* prompt, char** arg, char* output);
 size_t parsePrompt(char* prompt, CommandCall* commands);
 void handleCommand(CommandCall* command);
 
@@ -62,8 +64,15 @@ int main() {
 }
 
 void handleCommand(CommandCall* command) {
+	// Create a copy of current stdout
+	int stdout_copy = dup(1);
+
 	char** arg = command->args;
 	size_t argCount = command->argCount;
+	
+	// command->output is not `stdout`
+	if(strcmp(command->output, "stdout"))
+		freopen(command->output, "w", stdout);
 
 	// Check for the blank command
 	if (arg[0] == NULL) {
@@ -75,6 +84,11 @@ void handleCommand(CommandCall* command) {
 	} else { // Run an executable
 		tryExecutable(arg, argCount);
 	}
+
+	// Flush stdout before restoring from copy
+	fflush(stdout);
+	// Restore stdout from copy
+	dup2(stdout_copy, 1);
 }
 
 size_t parsePrompt(char* prompt, CommandCall* commands) {
@@ -82,9 +96,12 @@ size_t parsePrompt(char* prompt, CommandCall* commands) {
 	char* token = strsep(&prompt, "&");
 	while(token != NULL) {
 		char** args = calloc(sizeof(char), BUFFER_SIZE);
-		size_t argCount = parseArgs(token, args);
+		char* output = calloc(sizeof(char), BUFFER_SIZE);
+		printf("Token given to parseArgs is %s", token);
+		size_t argCount = parseArgs(token, args, output);
 		commands[lastCommand].argCount = argCount;
 		commands[lastCommand].args = args;
+		commands[lastCommand].output = output;
 		lastCommand++;
 		
 		token = strsep(&prompt, "&");
@@ -93,16 +110,33 @@ size_t parsePrompt(char* prompt, CommandCall* commands) {
 	return lastCommand;
 }
 
-size_t parseArgs(char* prompt, char** arg) {
+size_t parseArgs(char* prompt, char** arg, char* output) {
 	prompt[strcspn(prompt, "\n")] = '\0'; // Replace the endline character with terminator
 	size_t lastArg = 0;
 
-	char* token = strsep(&prompt, " ");
+	char* left_expr = strsep(&prompt, ">");
+	char* token = strsep(&left_expr, " ");
 	while(token != NULL) {
-		if(*token != '\0')
+		if(*token != '\0') {
 			arg[lastArg++] = token;
+		}
 
-		token = strsep(&prompt, " ");
+		token = strsep(&left_expr, " ");
+	}
+	
+	// It is the part behind the ">" sign that `prompt` points to
+	if(prompt) {
+		while(isspace(*prompt))
+			prompt++;
+
+		char* end = prompt + strlen(prompt) - 1;
+		while(end > prompt && isspace(*end))
+			end--;
+		end[1] = '\0';
+
+		strcpy(output, prompt);
+	} else {
+		strcpy(output, "stdout");
 	}
 
 	return lastArg;
