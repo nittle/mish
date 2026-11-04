@@ -35,7 +35,7 @@ int main() {
 
 	while(1) {
 		// Get prompt from the user and parse args
-		fprintf(stdout, "%s", "wish> ");
+		fprintf(stdout, "%s", "mish> ");
 		fgets(prompt, BUFFER_SIZE, stdin);
 		
 		CommandCall commandsCalled[BUFFER_SIZE];
