@@ -50,6 +50,7 @@ int main() {
 		// Free the args memory
 		for(size_t i = 0; i < commandsCount; i++) {
 			free(commandsCalled[i].args);
+			free(commandsCalled[i].output);
 		}
 
 		// Clear the prompt variable
